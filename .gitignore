@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Data: raw data is immutable input, never committed
+data/raw/*
+!data/raw/.gitkeep
+data/interim/*
+!data/interim/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+
+# Build artifacts (rule sets are reproducible from `make train` in ~15s)
+artifacts/*
+!artifacts/.gitkeep
+
+# Report figures ARE committed: evaluation_report.md embeds them, so excluding
+# them would render the report with broken images on GitHub.
+
+# Node
+node_modules/
+frontend/dist/
+.DS_Store
+.env

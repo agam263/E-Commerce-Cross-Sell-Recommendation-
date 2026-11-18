@@ -1,0 +1,816 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cross-Sell Recommendation Engine — Explained</title>
+<style>
+  @page { size: A4; margin: 0; }
+
+  :root {
+    --navy:    #131c2e;
+    --navy-2:  #0d1524;
+    --ink:     #0f172a;
+    --body:    #3f4a5c;
+    --muted:   #6b7788;
+    --line:    #e3e7ee;
+    --wash:    #f5f6fa;
+    --indigo:  #4f46e5;
+    --indigo-w:#eef2ff;
+    --orange:  #e8710a;
+    --orange-w:#fdf3e7;
+    --green:   #0f8a6a;
+    --green-w: #e7f6f1;
+    --red:     #be123c;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
+    color: var(--body);
+    font-size: 10pt;
+    line-height: 1.5;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    padding: 13mm 17mm;
+    page-break-after: always;
+    position: relative;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+  }
+  .page:last-child { page-break-after: auto; }
+
+  /* ---------------------------------------------------------- cover --- */
+  .cover {
+    background: linear-gradient(160deg, var(--navy) 0%, var(--navy-2) 70%, #1a2440 100%);
+    color: #fff;
+    justify-content: space-between;
+    padding: 32mm 18mm 20mm;
+  }
+  .cover .eyebrow {
+    font-size: 9pt; letter-spacing: .22em; text-transform: uppercase;
+    color: #8da2c0; font-weight: 700;
+  }
+  .cover h1 {
+    font-size: 36pt; line-height: 1.08; margin: 6mm 0 0; color: #fff;
+    letter-spacing: -0.02em; font-weight: 700;
+  }
+  .cover .lede {
+    font-size: 13pt; color: #c3d0e4; margin-top: 5mm; max-width: 135mm; line-height: 1.5;
+  }
+  .cover-rule { height: 1px; background: rgba(255,255,255,.18); margin-top: 11mm; width: 56mm; }
+  .cover-stats { display: flex; gap: 5mm; margin-top: 9mm; }
+  .cover-stat {
+    flex: 1; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.14);
+    border-radius: 4mm; padding: 5mm;
+  }
+  .cover-stat .v { font-size: 20pt; font-weight: 700; color: #fff; line-height: 1; }
+  .cover-stat .l { font-size: 8.5pt; color: #9fb2cc; margin-top: 2.5mm; line-height: 1.35; }
+  .cover-foot {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    border-top: 1px solid rgba(255,255,255,.14); padding-top: 5mm;
+    font-size: 8.5pt; color: #8da2c0;
+  }
+
+  /* ----------------------------------------------------- typography --- */
+  h2 {
+    font-size: 17.5pt; color: var(--ink); margin: 0 0 1mm;
+    letter-spacing: -0.015em; font-weight: 700; line-height: 1.15;
+  }
+  h2 .num {
+    display: inline-block; min-width: 9mm; padding: 0 1.5mm; height: 9mm; line-height: 9mm;
+    border-radius: 2.5mm; background: var(--indigo); color: #fff;
+    font-size: 11pt; text-align: center; margin-right: 3mm; vertical-align: 1mm;
+  }
+  .sub { font-size: 10pt; color: var(--muted); margin: 0 0 5mm; }
+  h3 { font-size: 11pt; color: var(--ink); margin: 5mm 0 1.5mm; font-weight: 700; }
+  p { margin: 0 0 3mm; }
+  strong { color: var(--ink); }
+  .small { font-size: 9pt; }
+
+  /* ---------------------------------------------------------- cards --- */
+  .card {
+    border: 1px solid var(--line); border-radius: 3mm; padding: 4.5mm;
+    background: #fff; page-break-inside: avoid;
+  }
+  .card.wash { background: var(--wash); }
+  .grid { display: grid; gap: 4mm; }
+  .g2 { grid-template-columns: 1fr 1fr; }
+  .g3 { grid-template-columns: 1fr 1fr 1fr; }
+
+  .kicker {
+    font-size: 8pt; letter-spacing: .12em; text-transform: uppercase;
+    font-weight: 700; color: var(--indigo); margin-bottom: 1.5mm;
+  }
+
+  /* --------------------------------------------------------- tables --- */
+  table { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
+  th {
+    text-align: left; font-size: 8pt; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--muted); font-weight: 700; padding: 2.5mm 3mm;
+    border-bottom: 1.5px solid var(--line); background: var(--wash);
+  }
+  td { padding: 2.2mm 3mm; border-bottom: 1px solid var(--line); vertical-align: top; }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+  tr:last-child td { border-bottom: none; }
+
+  /* ---------------------------------------------------------- misc ---- */
+  .callout {
+    border-left: 3px solid var(--orange); background: var(--orange-w);
+    padding: 3.5mm 4.5mm; border-radius: 0 2.5mm 2.5mm 0; page-break-inside: avoid;
+  }
+  .callout.good { border-left-color: var(--green); background: var(--green-w); }
+  .callout.info { border-left-color: var(--indigo); background: var(--indigo-w); }
+
+  code {
+    font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 9pt;
+    background: var(--wash); padding: .4mm 1.4mm; border-radius: 1mm; color: var(--indigo);
+  }
+  pre {
+    font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 8.5pt;
+    background: var(--navy); color: #cbd5e1; padding: 4mm; border-radius: 2.5mm;
+    overflow: hidden; margin: 0; line-height: 1.6;
+  }
+  pre .c { color: #7f8ea3; }
+  pre .k { color: #8ab4ff; }
+
+  .shot {
+    /* The source captures are whole scrolling pages and are very tall; cap the
+       height and crop from the top so the most important part stays visible
+       without the image swallowing a whole sheet. */
+    width: 100%; max-height: 118mm; object-fit: cover; object-position: top center;
+    border: 1px solid var(--line); border-radius: 2.5mm;
+    display: block; page-break-inside: avoid;
+  }
+  .caption { font-size: 8.5pt; color: var(--muted); margin-top: 2mm; }
+
+  .foot {
+    margin-top: auto; padding-top: 4mm; border-top: 1px solid var(--line);
+    font-size: 8pt; color: var(--muted);
+    display: flex; justify-content: space-between;
+  }
+
+  ol.steps { margin: 0; padding: 0; list-style: none; counter-reset: s; }
+  ol.steps li {
+    counter-increment: s; position: relative; padding-left: 10.5mm;
+    margin-bottom: 3mm; page-break-inside: avoid;
+  }
+  ol.steps li::before {
+    content: counter(s); position: absolute; left: 0; top: 0;
+    width: 7.5mm; height: 7.5mm; line-height: 7.5mm; text-align: center;
+    border-radius: 50%; background: var(--indigo-w); color: var(--indigo);
+    font-weight: 700; font-size: 9.5pt;
+  }
+  ol.steps b { color: var(--ink); display: block; }
+</style>
+</head>
+<body>
+
+<!-- ======================================================= COVER ===== -->
+<section class="page cover">
+  <div>
+    <div class="eyebrow">Advanced Data Science · Project Explainer</div>
+    <h1>Cross-Sell<br>Recommendation Engine</h1>
+    <p class="lede">
+      Finding which products customers buy together, and turning that
+      into suggestions a shop can actually act on — explained in plain language.
+    </p>
+
+    <div class="cover-rule"></div>
+
+    <div class="cover-stats">
+      <div class="cover-stat">
+        <div class="v">541,909</div>
+        <div class="l">rows of real sales data analysed</div>
+      </div>
+      <div class="cover-stat">
+        <div class="v">27,078</div>
+        <div class="l">product pairings discovered</div>
+      </div>
+      <div class="cover-stat">
+        <div class="v">8.2&times;</div>
+        <div class="l">better than just showing best-sellers</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cover-foot">
+    <div>
+      Online Retail dataset · Dec 2010 – Dec 2011<br>
+      Rule set <code style="background:rgba(255,255,255,.1);color:#c3d0e4">rs-43465a06-090dfeb4</code>
+    </div>
+    <div style="text-align:right">Apriori · FastAPI · React<br>184 automated tests</div>
+  </div>
+</section>
+
+<!-- ================================================== THE PROBLEM ==== -->
+<section class="page">
+  <h2><span class="num">1</span>What problem does this solve?</h2>
+  <p class="sub">The “customers who bought this also bought…” box, built properly.</p>
+
+  <p>
+    Imagine you run a gift shop. Someone puts a <strong>heart-shaped tealight holder</strong>
+    in their basket. What should you suggest next to it?
+  </p>
+  <p>
+    The lazy answer is to show whatever sells most overall. That is easy, but it ignores
+    the customer completely — everyone sees the same thing. The better answer is to look at
+    <strong>what people who bought that exact item actually bought alongside it</strong>,
+    and suggest that.
+  </p>
+  <p>
+    This project reads a year of real shop receipts, finds every pairing like that, scores
+    how trustworthy each one is, and serves the good ones through a website and an API.
+  </p>
+
+  <div style="margin:7mm 0">
+    <svg viewBox="0 0 700 150" width="100%" style="display:block">
+      <rect x="2" y="30" width="150" height="86" rx="10" fill="#eef2ff" stroke="#4f46e5"/>
+      <text x="77" y="62" text-anchor="middle" font-size="12" font-weight="700" fill="#4f46e5" font-family="Helvetica">BASKET</text>
+      <text x="77" y="82" text-anchor="middle" font-size="10" fill="#3f4a5c" font-family="Helvetica">Tealight holder</text>
+      <text x="77" y="98" text-anchor="middle" font-size="10" fill="#6b7788" font-family="Helvetica">85123A</text>
+
+      <path d="M158 73 L205 73" stroke="#cbd5e1" stroke-width="2.5" marker-end="url(#a)"/>
+      <defs><marker id="a" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+        <path d="M0,0 L0,6 L7,3 z" fill="#cbd5e1"/></marker></defs>
+
+      <rect x="212" y="18" width="188" height="110" rx="10" fill="#131c2e"/>
+      <text x="306" y="52" text-anchor="middle" font-size="12" font-weight="700" fill="#fff" font-family="Helvetica">THE ENGINE</text>
+      <text x="306" y="73" text-anchor="middle" font-size="9.5" fill="#9fb2cc" font-family="Helvetica">27,078 learned pairings</text>
+      <text x="306" y="90" text-anchor="middle" font-size="9.5" fill="#9fb2cc" font-family="Helvetica">fires only the ones that</text>
+      <text x="306" y="104" text-anchor="middle" font-size="9.5" fill="#9fb2cc" font-family="Helvetica">match this basket</text>
+
+      <path d="M406 73 L453 73" stroke="#cbd5e1" stroke-width="2.5" marker-end="url(#a)"/>
+
+      <rect x="460" y="12" width="238" height="30" rx="7" fill="#e7f6f1" stroke="#0f8a6a"/>
+      <text x="472" y="31" font-size="9.5" fill="#0f8a6a" font-weight="700" font-family="Helvetica">Red hanging heart holder</text>
+      <text x="686" y="31" font-size="9" fill="#0f8a6a" text-anchor="end" font-family="Helvetica">5.1&times;</text>
+
+      <rect x="460" y="48" width="238" height="30" rx="7" fill="#e7f6f1" stroke="#0f8a6a"/>
+      <text x="472" y="67" font-size="9.5" fill="#0f8a6a" font-weight="700" font-family="Helvetica">Candleholder pink heart</text>
+      <text x="686" y="67" font-size="9" fill="#0f8a6a" text-anchor="end" font-family="Helvetica">5.4&times;</text>
+
+      <rect x="460" y="84" width="238" height="30" rx="7" fill="#f5f6fa" stroke="#e3e7ee"/>
+      <text x="472" y="103" font-size="9.5" fill="#3f4a5c" font-family="Helvetica">Wooden picture frame</text>
+      <text x="686" y="103" font-size="9" fill="#6b7788" text-anchor="end" font-family="Helvetica">2.7&times;</text>
+
+      <text x="579" y="134" text-anchor="middle" font-size="8.5" fill="#6b7788" font-family="Helvetica">ranked suggestions, each with its evidence</text>
+    </svg>
+  </div>
+
+  <div class="callout info">
+    <div class="kicker">The one-sentence version</div>
+    <p style="margin:0">
+      <strong>Read a year of receipts → find pairs that occur together more often than
+      coincidence would explain → suggest those pairs, and show the proof.</strong>
+    </p>
+  </div>
+
+  <h3>What makes this different from guessing</h3>
+  <p>
+    Every suggestion carries its own evidence: how many receipts back it up, how reliable
+    it is, and how much better than chance it is. If the engine has nothing solid to say
+    about a product, it says so and falls back to best-sellers — clearly labelled, rather
+    than inventing a confident-looking number.
+  </p>
+
+  <div class="foot"><span>Cross-Sell Recommendation Engine</span><span>Page 1</span></div>
+</section>
+
+<!-- ====================================================== THE DATA === -->
+<section class="page">
+  <h2><span class="num">2</span>The data, and cleaning it</h2>
+  <p class="sub">Real receipts from a UK gift wholesaler, Dec 2010 – Dec 2011.</p>
+
+  <p>
+    The raw file has <strong>541,909 rows</strong>. Each row is one line on one receipt:
+    which invoice, which product, how many, at what price. Before any analysis, rows that
+    would mislead the model have to go — and every removal is recorded so the numbers can
+    be audited later.
+  </p>
+
+  <table>
+    <thead>
+      <tr><th>Cleaning step</th><th>Why</th><th class="n">Rows removed</th><th class="n">Left</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Starting point</td><td class="small">The raw spreadsheet</td><td class="n">—</td><td class="n">541,909</td></tr>
+      <tr><td>Drop exact duplicates</td><td class="small">Same line entered twice</td><td class="n">5,268</td><td class="n">536,641</td></tr>
+      <tr><td>Remove cancellations</td><td class="small">Cancelled orders are not purchases</td><td class="n">9,251</td><td class="n">527,390</td></tr>
+      <tr><td>Keep positive quantities</td><td class="small">Negatives are returns</td><td class="n">1,336</td><td class="n">526,054</td></tr>
+      <tr><td>Keep positive prices</td><td class="small">Free items distort value</td><td class="n">1,176</td><td class="n">524,878</td></tr>
+      <tr><td>Drop service codes</td><td class="small">Postage, fees — not products</td><td class="n">2,341</td><td class="n">522,537</td></tr>
+    </tbody>
+  </table>
+
+  <p style="margin-top:4mm">
+    <strong>96.4% of the data survives.</strong> What is left describes
+    <strong>19,773 receipts</strong>, <strong>3,907 products</strong> and
+    <strong>4,334 customers</strong>.
+  </p>
+
+  <h3>From receipts to “baskets”</h3>
+  <p>
+    The engine does not care <em>how many</em> of something you bought — only
+    <em>whether</em> it was in the basket. Ten candles and one candle are the same fact:
+    “this basket contained candles”. So each receipt becomes a simple list of distinct
+    products. A typical basket holds <strong>17 different products</strong> (the average is
+    28, pulled up by a few very large wholesale orders).
+  </p>
+
+  <div class="callout">
+    <div class="kicker">The most important rule in the whole project</div>
+    <p style="margin:0">
+      The receipts are split <strong>by date</strong>, not randomly: the first 70% to learn
+      from, the last 15% locked away and never looked at until the very end. Testing on data
+      the model has already seen is the classic way to fool yourself into thinking a model
+      is better than it is. Splitting by date also mirrors reality — you always predict the
+      future from the past, never the other way round.
+    </p>
+  </div>
+
+  <div class="grid g3" style="margin-top:6mm">
+    <div class="card wash"><div class="kicker">Learn from</div><div style="font-size:16pt;font-weight:700;color:var(--ink)">12,779</div><div class="small">earliest receipts</div></div>
+    <div class="card wash"><div class="kicker">Tune with</div><div style="font-size:16pt;font-weight:700;color:var(--ink)">2,686</div><div class="small">middle receipts</div></div>
+    <div class="card wash"><div class="kicker">Final exam</div><div style="font-size:16pt;font-weight:700;color:var(--ink)">2,695</div><div class="small">latest, never seen</div></div>
+  </div>
+
+  <div class="foot"><span>Cross-Sell Recommendation Engine</span><span>Page 2</span></div>
+</section>
+
+<!-- =================================================== THE 3 NUMBERS = -->
+<section class="page">
+  <h2><span class="num">3</span>The three numbers that matter</h2>
+  <p class="sub">Everything the engine decides comes down to these. Here they are on one example.</p>
+
+  <div class="card wash" style="margin-bottom:6mm">
+    <div class="kicker">Our example</div>
+    <p style="margin:0">
+      Out of <strong>1,000 receipts</strong>: product <strong>A</strong> appears on
+      <strong>200</strong>, product <strong>B</strong> appears on <strong>100</strong>, and
+      <strong>60</strong> receipts contain <strong>both</strong>.
+    </p>
+  </div>
+
+  <div class="grid g3">
+    <div class="card">
+      <div class="kicker">Support</div>
+      <div style="font-size:22pt;font-weight:700;color:var(--indigo);line-height:1">6%</div>
+      <p class="small" style="margin:2mm 0 0"><code>60 ÷ 1,000</code></p>
+      <p class="small" style="margin:2mm 0 0">
+        <strong>How common is this combination?</strong> 6 receipts in every 100 had both.
+        Low support means the pairing rests on very few sales — treat it carefully no matter
+        how good the other two numbers look.
+      </p>
+    </div>
+    <div class="card">
+      <div class="kicker">Confidence</div>
+      <div style="font-size:22pt;font-weight:700;color:var(--indigo);line-height:1">30%</div>
+      <p class="small" style="margin:2mm 0 0"><code>60 ÷ 200</code></p>
+      <p class="small" style="margin:2mm 0 0">
+        <strong>How often does it actually happen?</strong> Of the people who bought A,
+        30% also bought B. This is the “will this suggestion land?” number, and it is what
+        the shipped engine ranks on.
+      </p>
+    </div>
+    <div class="card">
+      <div class="kicker">Lift</div>
+      <div style="font-size:22pt;font-weight:700;color:var(--indigo);line-height:1">3.0&times;</div>
+      <p class="small" style="margin:2mm 0 0"><code>30% ÷ 10%</code></p>
+      <p class="small" style="margin:2mm 0 0">
+        <strong>Is this better than chance?</strong> B is on 10% of all receipts, but on 30%
+        of A’s receipts — three times more often. <strong>Lift of 1 means no connection at
+        all.</strong> Below 1, the two actually repel each other.
+      </p>
+    </div>
+  </div>
+
+  <h3>Why you need all three</h3>
+  <p>
+    Each number alone can lie. A best-seller has high confidence with <em>everything</em>,
+    simply because it is everywhere — lift catches that and scores it near 1. A freak pairing
+    of two rare items can show spectacular lift off three receipts — support catches that.
+    Used together they describe a pairing that is <strong>common enough to matter,
+    reliable enough to act on, and real rather than coincidence</strong>.
+  </p>
+
+  <div class="callout info">
+    <div class="kicker">The bar this project sets</div>
+    <p style="margin:0">
+      A pairing is only kept if it appears on at least <strong>0.3% of receipts</strong>,
+      lands at least <strong>15% of the time</strong>, is at least <strong>2&times; better
+      than chance</strong>, and is backed by at least <strong>25 receipts</strong>.
+      Out of millions of possible combinations, <strong>27,078</strong> clear all four.
+    </p>
+  </div>
+
+  <h3>One honest caveat found in this data</h3>
+  <p>
+    The very highest-lift pairings turn out to be the <em>same product in another colour</em>
+    — blue and green versions of one party dish, bought together 177&times; more often than
+    chance. Statistically that is the strongest signal in the dataset. Commercially it is not
+    really a cross-sell; it means customers buy ranges in multiples. Worth knowing before
+    presenting lift as <em>the</em> business metric.
+  </p>
+
+  <div class="foot"><span>Cross-Sell Recommendation Engine</span><span>Page 3</span></div>
+</section>
+
+<!-- ======================================================== APRIORI == -->
+<section class="page">
+  <h2><span class="num">4</span>How the patterns are found</h2>
+  <p class="sub">The Apriori algorithm, without the mathematics.</p>
+
+  <p>
+    With 3,907 products, the number of possible combinations is astronomically large —
+    far too many to count one by one. Apriori (Agrawal &amp; Srikant, 1994) avoids that with
+    a single clever observation.
+  </p>
+
+  <div class="callout good">
+    <div class="kicker">The key insight</div>
+    <p style="margin:0">
+      <strong>If a product is too rare on its own, then any pair containing it must be at
+      least as rare.</strong> So once a product fails the test, every combination involving
+      it can be thrown away without ever being counted. That one rule is what turns an
+      impossible search into a few seconds of work.
+    </p>
+  </div>
+
+  <ol class="steps" style="margin-top:6mm">
+    <li><b>Count every product on its own.</b>
+      Keep the ones that appear often enough. Everything else is discarded now and never
+      reconsidered.</li>
+    <li><b>Build pairs, but only from the survivors.</b>
+      There is no point pairing a product that already failed — the insight above guarantees
+      the pair would fail too.</li>
+    <li><b>Count those pairs and prune again.</b>
+      Anything below the threshold is dropped. Repeat for larger groups until nothing
+      survives.</li>
+    <li><b>Turn each surviving group into a rule.</b>
+      A group {A, B} becomes “if the basket has A, suggest B”, scored with support,
+      confidence and lift.</li>
+    <li><b>Filter out the weak rules.</b>
+      Anything below the confidence and lift floors is thrown away, so only genuine
+      associations are ever served.</li>
+  </ol>
+
+  <div class="grid g3" style="margin-top:3mm">
+    <div class="card wash"><div class="kicker">Groups found</div><div style="font-size:15pt;font-weight:700;color:var(--ink)">33,680</div><div class="small">1,980 single · 31,700 pairs</div></div>
+    <div class="card wash"><div class="kicker">Rules produced</div><div style="font-size:15pt;font-weight:700;color:var(--ink)">27,078</div><div class="small">after filtering</div></div>
+    <div class="card wash"><div class="kicker">Time taken</div><div style="font-size:15pt;font-weight:700;color:var(--ink)">~5 sec</div><div class="small">on 12,779 baskets</div></div>
+  </div>
+
+  <h3>Why pairs, and not bigger groups?</h3>
+  <p>
+    Groups of three were tested and <strong>performed worse</strong> — they describe the
+    training receipts too specifically and fail on new ones, while producing seventeen times
+    more rules to store. Pairs generalise better. This was measured, not assumed.
+  </p>
+
+  <h3>Written from scratch, checked against a library</h3>
+  <p>
+    The algorithm is implemented directly from the 1994 paper rather than called from a
+    library. To prove the implementation is right, an automated test runs the same data
+    through the well-known <code>mlxtend</code> library and asserts that
+    <strong>every group, every count and every score matches exactly</strong>. That test is
+    the backbone of trusting all the numbers in this document.
+  </p>
+
+  <div class="foot"><span>Cross-Sell Recommendation Engine</span><span>Page 4</span></div>
+</section>
+
+<!-- =================================================== ARCHITECTURE == -->
+<section class="page">
+  <h2><span class="num">5</span>How the system is put together</h2>
+  <p class="sub">Four stages, each one feeding the next.</p>
+
+  <svg viewBox="0 0 700 300" width="100%" style="display:block;margin:2mm 0 6mm">
+    <!-- stage 1 -->
+    <rect x="0" y="8" width="700" height="62" rx="8" fill="#f5f6fa" stroke="#e3e7ee"/>
+    <text x="14" y="28" font-size="9" font-weight="700" fill="#4f46e5" font-family="Helvetica">1 · DATA PIPELINE</text>
+    <text x="14" y="46" font-size="10" fill="#3f4a5c" font-family="Helvetica">Raw spreadsheet → clean the rows → one basket per receipt → split by date</text>
+    <text x="14" y="61" font-size="8.5" fill="#6b7788" font-family="Helvetica">Python · pandas · every removal recorded in an audit trail</text>
+
+    <path d="M350 70 L350 84" stroke="#cbd5e1" stroke-width="2" marker-end="url(#b)"/>
+    <defs><marker id="b" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L7,3 z" fill="#cbd5e1"/></marker></defs>
+
+    <!-- stage 2 -->
+    <rect x="0" y="86" width="700" height="62" rx="8" fill="#eef2ff" stroke="#4f46e5"/>
+    <text x="14" y="106" font-size="9" font-weight="700" fill="#4f46e5" font-family="Helvetica">2 · THE MODEL</text>
+    <text x="14" y="124" font-size="10" fill="#3f4a5c" font-family="Helvetica">Apriori finds frequent groups → groups become scored rules → weak rules filtered out</text>
+    <text x="14" y="139" font-size="8.5" fill="#6b7788" font-family="Helvetica">Output: 27,078 rules, saved as files and stamped with a version number</text>
+
+    <path d="M350 148 L350 162" stroke="#cbd5e1" stroke-width="2" marker-end="url(#b)"/>
+
+    <!-- stage 3 -->
+    <rect x="0" y="164" width="700" height="62" rx="8" fill="#f5f6fa" stroke="#e3e7ee"/>
+    <text x="14" y="184" font-size="9" font-weight="700" fill="#4f46e5" font-family="Helvetica">3 · THE API</text>
+    <text x="14" y="202" font-size="10" fill="#3f4a5c" font-family="Helvetica">Loads the saved rules and answers questions over the web</text>
+    <text x="14" y="217" font-size="8.5" fill="#6b7788" font-family="Helvetica">FastAPI · /recommendations · /rules · /products · /simulate-revenue · /insights</text>
+
+    <path d="M350 226 L350 240" stroke="#cbd5e1" stroke-width="2" marker-end="url(#b)"/>
+
+    <!-- stage 4 -->
+    <rect x="0" y="242" width="700" height="56" rx="8" fill="#131c2e"/>
+    <text x="14" y="262" font-size="9" font-weight="700" fill="#8ab4ff" font-family="Helvetica">4 · THE DASHBOARD</text>
+    <text x="14" y="280" font-size="10" fill="#c3d0e4" font-family="Helvetica">Six screens a merchandising team can actually use</text>
+    <text x="14" y="294" font-size="8.5" fill="#8da2c0" font-family="Helvetica">React · charts, product cards, association graphs, revenue scenarios</text>
+  </svg>
+
+  <h3>Why it is split this way</h3>
+  <p>
+    Each stage can be rebuilt, tested and replaced without disturbing the others. The model
+    is trained <em>once</em> and saved to disk; the API only reads those files. That means
+    answering a recommendation takes milliseconds — no mining happens while a customer waits.
+  </p>
+
+  <h3>Every result can be traced back</h3>
+  <p>
+    Each rule set gets a version stamp built from two fingerprints: one of the exact data
+    file, one of the settings used. Same file plus same settings always produces the same
+    version and the same rules. Alongside it sits a record of the data, the settings, the
+    scores, and the exact software versions used.
+  </p>
+
+  <pre><span class="c"># the whole thing, from nothing to a running dashboard</span>
+make setup   <span class="c"># install everything</span>
+make data    <span class="c"># download the sales data</span>
+make train   <span class="c"># clean → mine → score → save  (about 15 seconds)</span>
+make test    <span class="c"># 184 automated checks</span>
+make api     <span class="c"># start the API</span>
+make ui      <span class="c"># start the dashboard  →  http://localhost:5173</span></pre>
+
+  <div class="foot"><span>Cross-Sell Recommendation Engine</span><span>Page 5</span></div>
+</section>
+
+<!-- ==================================================== DOES IT WORK = -->
+<section class="page">
+  <h2><span class="num">6</span>Does it actually work?</h2>
+  <p class="sub">A fair test, run once, on receipts the model had never seen.</p>
+
+  <h3>How the test works</h3>
+  <p>
+    Take a receipt from the locked-away final 15%. <strong>Hide one product from it.</strong>
+    Show the engine the rest of the basket and ask for five suggestions. Did the hidden
+    product come back? Repeat for every receipt. The share of times it did is the
+    <strong>hit rate</strong>.
+  </p>
+  <p>
+    This is a deliberately hard test: the engine gets one guess at five items out of nearly
+    four thousand. To know whether the score is any good, it is compared against the obvious
+    alternative — <strong>always showing the five best-selling products</strong>.
+  </p>
+
+  <svg viewBox="0 0 700 160" width="100%" style="display:block;margin:4mm 0">
+    <text x="0" y="16" font-size="9.5" fill="#3f4a5c" font-weight="700" font-family="Helvetica">This engine</text>
+    <rect x="0" y="24" width="606" height="34" rx="5" fill="#0f8a6a"/>
+    <text x="596" y="46" font-size="14" font-weight="700" fill="#fff" text-anchor="end" font-family="Helvetica">18.55%</text>
+
+    <text x="0" y="86" font-size="9.5" fill="#3f4a5c" font-weight="700" font-family="Helvetica">Just showing best-sellers</text>
+    <rect x="0" y="94" width="74" height="34" rx="5" fill="#cbd5e1"/>
+    <text x="84" y="116" font-size="14" font-weight="700" fill="#6b7788" font-family="Helvetica">2.26%</text>
+
+    <text x="0" y="150" font-size="9" fill="#6b7788" font-family="Helvetica">Share of hidden products correctly recovered in the top 5 · 2,695 unseen receipts</text>
+  </svg>
+
+  <div class="callout good">
+    <p style="margin:0">
+      <strong>18.55% against 2.26% — the engine is 8.2&times; better than the obvious
+      alternative.</strong> Nearly one in five hidden products is recovered from a catalogue
+      of 3,907, against roughly one in forty-four for best-sellers.
+    </p>
+  </div>
+
+  <h3>The other numbers worth knowing</h3>
+  <table style="margin-top:2mm">
+    <tbody>
+      <tr><td><strong>97.9%</strong></td><td>of unseen receipts got at least one genuine rule-based suggestion</td></tr>
+      <tr><td><strong>38.9%</strong></td><td>of the eligible catalogue has at least one rule the engine can fire</td></tr>
+      <tr><td><strong>1,256</strong></td><td>products can trigger a recommendation; the rest fall back to best-sellers, labelled</td></tr>
+      <tr><td><strong>10.0&times;</strong></td><td>average lift across all 27,078 rules</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout" style="margin-top:5mm">
+    <div class="kicker">Why coverage is only 39%, and why that is fine</div>
+    <p style="margin:0">
+      Most products in a wholesale catalogue sell rarely, and a pattern cannot be learned
+      from a handful of sales. But the products that <em>do</em> have rules are the ones
+      customers actually buy — which is why <strong>97.9% of real receipts still get a
+      genuine suggestion</strong> even though only 39% of the catalogue is covered.
+    </p>
+  </div>
+
+  <div class="foot"><span>Cross-Sell Recommendation Engine</span><span>Page 6</span></div>
+</section>
+
+<!-- ===================================================== DASHBOARD === -->
+<section class="page">
+  <h2><span class="num">7</span>What you actually see</h2>
+  <p class="sub">Six screens, built for a merchandising team rather than a data scientist.</p>
+
+  <img class="shot" src="screenshots/01-overview.png" alt="Overview dashboard">
+  <p class="caption">
+    <strong>Overview</strong> — headline numbers each explained in a line, the fair-test
+    comparison, how the rule scores are distributed, and written insights generated from the
+    rules themselves.
+  </p>
+
+  <h3>Why it looks like a shop, not a spreadsheet</h3>
+  <p>
+    The people who act on these suggestions are merchandisers, not statisticians. So the
+    numbers are always paired with a plain-language reading — “moderate”, “strong” — and
+    every figure on screen comes straight from the API rather than being recalculated in
+    the browser, so what you see can never drift from what the engine computed.
+  </p>
+
+  <div class="foot"><span>Cross-Sell Recommendation Engine</span><span>Page 7</span></div>
+</section>
+
+<section class="page">
+  <h2><span class="num">8</span>Finding a cross-sell</h2>
+  <p class="sub">The screen that answers “what should I sell next to this?”</p>
+
+  <img class="shot" src="screenshots/02-product-explorer.png" alt="Product Explorer">
+  <p class="caption">
+    <strong>Product Explorer</strong> — search the catalogue, build a basket, and get
+    suggestions as product cards with price, strength rating and the full reasoning. The
+    spider diagram shows how the basket connects to each suggestion: thicker line means a
+    stronger pairing.
+  </p>
+
+  <div class="grid g2" style="margin-top:6mm">
+    <div class="card">
+      <div class="kicker">Rule Explorer</div>
+      <p class="small" style="margin:0">All 27,078 pairings in a searchable table. Filter by
+      strength, sort any column, click a row for the full breakdown, export to a spreadsheet.</p>
+    </div>
+    <div class="card">
+      <div class="kicker">Revenue Simulator</div>
+      <p class="small" style="margin:0">Try “what if 5% of customers accept a suggestion?”
+      and see the money it would imply, with the arithmetic shown.</p>
+    </div>
+    <div class="card">
+      <div class="kicker">Model &amp; Rule Set</div>
+      <p class="small" style="margin:0">Exactly which data and which settings produced what
+      you are looking at, plus the command to reproduce it.</p>
+    </div>
+    <div class="card">
+      <div class="kicker">Documentation</div>
+      <p class="small" style="margin:0">The metrics explained with a worked example, and an
+      honest list of what the numbers cannot tell you.</p>
+    </div>
+  </div>
+
+  <div class="callout info" style="margin-top:5mm">
+    <div class="kicker">A note on the product pictures</div>
+    <p style="margin:0">
+      The dataset contains no product photographs. Searching for the real product names
+      returns nothing at all. So each product shows a photograph representing its
+      <strong>category</strong>, worked out from its name — and every screen says so. It is a
+      visual aid, never a claim that this is the actual item.
+    </p>
+  </div>
+
+  <div class="foot"><span>Cross-Sell Recommendation Engine</span><span>Page 8</span></div>
+</section>
+
+<!-- ================================================ MONEY + LIMITS === -->
+<section class="page">
+  <h2><span class="num">9</span>Turning it into money — carefully</h2>
+  <p class="sub">What the revenue figures mean, and the honest limits of the whole thing.</p>
+
+  <p>
+    The simulator answers a planning question: <em>if we put this on the website, what might
+    it be worth?</em> The arithmetic is deliberately simple, so nothing hides inside it:
+  </p>
+
+  <pre>extra orders    = eligible orders  ×  how many accept the suggestion
+extra revenue   = extra orders     ×  value of the extra item</pre>
+
+  <table style="margin-top:5mm">
+    <thead><tr><th>Scenario</th><th class="n">Acceptance</th><th class="n">Extra orders</th><th class="n">Extra revenue</th></tr></thead>
+    <tbody>
+      <tr><td>Conservative</td><td class="n">2%</td><td class="n">53</td><td class="n">£1,204</td></tr>
+      <tr><td><strong>Base</strong></td><td class="n">5%</td><td class="n"><strong>132</strong></td><td class="n"><strong>£3,010</strong></td></tr>
+      <tr><td>Optimistic</td><td class="n">10%</td><td class="n">264</td><td class="n">£6,020</td></tr>
+    </tbody>
+  </table>
+  <p class="caption">Based on 2,638 eligible orders and an average extra item value of £22.82, both taken from the unseen test period.</p>
+
+  <div class="callout" style="margin-top:4mm">
+    <div class="kicker">Read this before quoting any of those numbers</div>
+    <p style="margin:0">
+      These are <strong>estimates built from assumptions you choose</strong>, not measured
+      earnings. The model supplies the order count and the item value; the acceptance rate is
+      a business judgement. <strong>Proving real uplift requires a live experiment</strong> —
+      showing the suggestions to some customers and not others, then comparing.
+    </p>
+  </div>
+
+  <h3>What this project cannot tell you</h3>
+  <div class="grid g2" style="margin-top:3mm">
+    <div class="card">
+      <div class="kicker" style="color:var(--red)">Together ≠ because</div>
+      <p class="small" style="margin:0">A rule says two products appeared together in the
+      past. It does <strong>not</strong> prove that promoting one causes the other to sell.</p>
+    </div>
+    <div class="card">
+      <div class="kicker" style="color:var(--red)">One shop, one year</div>
+      <p class="small" style="margin:0">A UK gift wholesaler over twelve months. Christmas is
+      baked into these patterns; another shop would produce different ones.</p>
+    </div>
+    <div class="card">
+      <div class="kicker" style="color:var(--red)">Rare products stay invisible</div>
+      <p class="small" style="margin:0">Products with too few sales get no rules and fall back
+      to best-sellers — labelled honestly rather than dressed up.</p>
+    </div>
+    <div class="card">
+      <div class="kicker" style="color:var(--red)">Colour variants look like cross-sells</div>
+      <p class="small" style="margin:0">The strongest pairings are often the same item in
+      another colour — a range-merchandising signal, not a true cross-sell.</p>
+    </div>
+  </div>
+
+  <h3>How it is kept honest</h3>
+  <p>
+    <strong>184 automated tests</strong> cover the cleaning rules, the algorithm, the scoring
+    formulas, the recommendation logic and every API endpoint — including the test that
+    checks the hand-written Apriori against an established library. The final score was
+    measured <strong>once</strong>, on data never used for tuning.
+  </p>
+
+  <div class="foot"><span>Cross-Sell Recommendation Engine</span><span>Page 9</span></div>
+</section>
+
+<!-- ====================================================== SUMMARY ==== -->
+<section class="page">
+  <h2><span class="num">10</span>The whole project on one page</h2>
+  <p class="sub">If you read nothing else.</p>
+
+  <div class="grid g2">
+    <div class="card wash">
+      <div class="kicker">What it does</div>
+      <p class="small" style="margin:0">Reads a year of shop receipts, finds which products
+      genuinely sell together, and serves ranked suggestions with the evidence behind each one
+      — through an API and a six-screen dashboard.</p>
+    </div>
+    <div class="card wash">
+      <div class="kicker">How it decides</div>
+      <p class="small" style="margin:0">Three scores per pairing — how common (support), how
+      reliable (confidence), how much better than chance (lift). A pairing must clear all
+      three thresholds to be served at all.</p>
+    </div>
+  </div>
+
+  <h3>The numbers that matter</h3>
+  <table>
+    <tbody>
+      <tr><td>Sales rows analysed</td><td class="n"><strong>541,909</strong></td><td class="small">96.4% survived cleaning</td></tr>
+      <tr><td>Receipts / products / customers</td><td class="n"><strong>19,773 · 3,907 · 4,334</strong></td><td class="small">after cleaning</td></tr>
+      <tr><td>Pairings discovered</td><td class="n"><strong>27,078</strong></td><td class="small">from 33,680 frequent groups</td></tr>
+      <tr><td>Hit rate on unseen receipts</td><td class="n"><strong>18.55%</strong></td><td class="small">one guess at five from 3,907</td></tr>
+      <tr><td>Best-seller baseline</td><td class="n"><strong>2.26%</strong></td><td class="small">the obvious alternative</td></tr>
+      <tr><td>Improvement</td><td class="n"><strong>8.2&times;</strong></td><td class="small">the headline result</td></tr>
+      <tr><td>Receipts given a real suggestion</td><td class="n"><strong>97.9%</strong></td><td class="small">coverage where it counts</td></tr>
+      <tr><td>Automated tests</td><td class="n"><strong>184</strong></td><td class="small">all passing</td></tr>
+      <tr><td>Time to train</td><td class="n"><strong>~15 sec</strong></td><td class="small">end to end</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Three design choices worth defending</h3>
+  <ol class="steps" style="margin-top:3mm">
+    <li><b>Split the data by date, not at random.</b>
+      A random split lets tomorrow leak into today and quietly inflates every score.</li>
+    <li><b>Rank by confidence, with lift as the entry requirement.</b>
+      Lift decides whether a pairing is real; confidence decides which real pairing to show
+      first. Measured on held-out data, this ordering beat the alternative
+      (18.1% against 15.7%). Both are available in the dashboard so the trade-off is visible.</li>
+    <li><b>Say “I don’t know” out loud.</b>
+      When no rule fires, the engine shows best-sellers and <em>labels them as a fallback</em>.
+      A recommender that always sounds confident cannot be trusted when it matters.</li>
+  </ol>
+
+  <div class="callout info" style="margin-top:6mm">
+    <div class="kicker">In one sentence</div>
+    <p style="margin:0;font-size:11pt">
+      A working, tested, reproducible cross-sell engine that is
+      <strong>8.2&times; better than showing best-sellers</strong>, explains every suggestion
+      it makes, and is honest about the limits of what sales data can prove.
+    </p>
+  </div>
+
+  <div class="foot"><span>Cross-Sell Recommendation Engine · Online Retail dataset · rule set rs-43465a06-090dfeb4</span><span>Page 10</span></div>
+</section>
+
+</body>
+</html>

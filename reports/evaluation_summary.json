@@ -1,0 +1,94 @@
+{
+  "test": {
+    "split": "test",
+    "holdout_invoices": 2695,
+    "holdout_products": 2622,
+    "rule_population": {
+      "rules": 27078,
+      "rules_by_antecedent_size": {
+        "1": 27078
+      },
+      "distinct_antecedent_products": 1256,
+      "distinct_consequent_products": 1078,
+      "support": {
+        "min": 0.003051881993896236,
+        "p25": 0.003443148916190625,
+        "median": 0.004225682760779404,
+        "mean": 0.005332350573937047,
+        "p75": 0.005712497065498083,
+        "p95": 0.011503247515455043,
+        "max": 0.050629939744893965
+      },
+      "confidence": {
+        "min": 0.15,
+        "p25": 0.18416523235800344,
+        "median": 0.23493975903614456,
+        "mean": 0.2716973076334008,
+        "p75": 0.3228346456692914,
+        "p95": 0.5127098789535335,
+        "max": 1.0
+      },
+      "lift": {
+        "min": 2.0003913434821743,
+        "p25": 3.3799651392586787,
+        "median": 5.230965662310566,
+        "mean": 10.03579568204752,
+        "p75": 10.541554959785522,
+        "p95": 34.32159132362389,
+        "max": 176.81079211345556
+      },
+      "leverage": {
+        "min": 0.0015303407979289226,
+        "p25": 0.002830281440112851,
+        "median": 0.00339142599484843,
+        "mean": 0.004221094078029769,
+        "p75": 0.0045281070768389145,
+        "p95": 0.008914751826026092,
+        "max": 0.04291061905040587
+      }
+    },
+    "replay": {
+      "k": 5,
+      "baskets_evaluated": 2695,
+      "baskets_with_recommendation": 2638,
+      "basket_coverage": 0.9788497217068646,
+      "hit_rate_at_k": 0.18552875695732837,
+      "hit_rate_at_k_when_served": 0.18953752843062927,
+      "mrr_at_k": 0.12285714285714276,
+      "popularity_baseline_hit_rate": 0.022634508348794064,
+      "uplift_vs_popularity": 8.19672131147541,
+      "distinct_hidden_products": 1117,
+      "distinct_hidden_products_recovered": 231,
+      "seed": 42
+    },
+    "catalog_coverage": {
+      "products_tested": 3229,
+      "products_with_recommendation": 1256,
+      "coverage": 0.388974914834314
+    },
+    "holdout_product_coverage": {
+      "products_tested": 2622,
+      "products_with_recommendation": 1166,
+      "coverage": 0.444698703279939
+    }
+  },
+  "validation_replay": {
+    "k": 5,
+    "baskets_evaluated": 2686,
+    "baskets_with_recommendation": 2629,
+    "basket_coverage": 0.9787788533134772,
+    "hit_rate_at_k": 0.18428890543559195,
+    "hit_rate_at_k_when_served": 0.18828451882845187,
+    "mrr_at_k": 0.11052990816579783,
+    "popularity_baseline_hit_rate": 0.020104244229337303,
+    "uplift_vs_popularity": 9.166666666666668,
+    "distinct_hidden_products": 1146,
+    "distinct_hidden_products_recovered": 260,
+    "seed": 42
+  },
+  "split_sizes": {
+    "train": 12779,
+    "validation": 2686,
+    "test": 2695
+  }
+}

@@ -1,0 +1,109 @@
+# ---------------------------------------------------------------------------
+# Cross-Sell Recommendation Engine - pipeline configuration
+#
+# This file is the single source of truth for every tunable in the pipeline.
+# It is copied verbatim into the rule-set manifest, so a rule set can always be
+# traced back to the exact configuration that produced it (PRD: FR-02, FR-10).
+# ---------------------------------------------------------------------------
+
+project:
+  name: crosssell
+  # Rule-set version. Use "auto" to derive a reproducible version string from
+  # the dataset fingerprint + configuration hash (recommended).
+  ruleset_version: auto
+
+paths:
+  raw_data: data/raw/Online Retail.xlsx
+  interim_dir: data/interim
+  processed_dir: data/processed
+  artifacts_dir: artifacts
+  reports_dir: reports
+
+preprocessing:
+  drop_exact_duplicates: true        # identical rows are re-scans / export artefacts
+  exclude_cancellations: true        # InvoiceNo starting with "C"
+  require_positive_quantity: true    # negative = return/correction, not a purchase
+  require_positive_unit_price: true  # 0.00 lines are adjustments/samples
+  drop_missing_customer_id: false    # a basket is valid even without a customer id
+  drop_non_product_codes: true       # postage, fees, manual adjustments (see list)
+  non_product_stock_codes:
+    - POST          # postage
+    - DOT           # dotcom postage
+    - C2            # carriage
+    - M             # manual adjustment
+    - m             # manual adjustment (lowercase variant)
+    - S             # samples
+    - B             # adjust bad debt
+    - D             # discount
+    - CRUK          # charity donation
+    - PADS          # pads to match all cushions (service line)
+    - BANK CHARGES  # bank charges
+    - AMAZONFEE     # marketplace fee
+  non_product_code_patterns:
+    - "^gift_"      # gift-voucher pseudo products
+    - "^TEST"       # test rows
+  country: null                      # e.g. "United Kingdom" to mine one market only
+  min_basket_size: 2                 # a 1-item invoice carries no co-occurrence signal
+  min_product_invoices: 5            # drop ultra-rare products before mining (speed)
+
+split:
+  # Chronological split. The test slice is NEVER used while tuning thresholds
+  # (PRD product principle: "keep evaluation data untouched").
+  strategy: temporal
+  train_fraction: 0.70
+  validation_fraction: 0.15
+  test_fraction: 0.15
+
+# ---------------------------------------------------------------------------
+# Mining thresholds. These values were CHOSEN ON THE VALIDATION SPLIT ONLY
+# (`python -m crosssell.cli tune`); the test split was not consulted. See
+# reports/evaluation_report.md for the full sweep table behind each choice.
+# ---------------------------------------------------------------------------
+mining:
+  engine: builtin          # builtin | mlxtend  (verified to produce identical results)
+  min_support: 0.003       # fraction of training invoices containing the itemset
+  # max_itemset_size 2 beat 3 on validation: hit@5 0.181 vs 0.156 while storing
+  # 8k rules instead of 136k. Three-item antecedents are more specific, rest on
+  # less evidence and generalise worse to the next trading period.
+  max_itemset_size: 2
+  # Best row of the validation sweep (hit@5 0.1843, basket coverage 97.9%).
+  # A higher confidence floor quietly penalises the *most popular* antecedents:
+  # their baskets are diffuse, so no single consequent reaches a high P(B|A)
+  # even when lift is 5x. Lift is the stricter gate here, and it is the one that
+  # expresses "genuinely associated".
+  min_confidence: 0.15
+  min_lift: 2.0            # only genuinely associated pairs are ever served
+  min_antecedent_count: 25 # absolute invoice count behind the "if" side of a rule
+  max_consequent_size: 1   # cross-sell = recommend one product at a time
+
+recommendation:
+  top_k: 5
+  # Ranking order, applied lexicographically. NOTE: the PRD suggests ranking by
+  # lift first. Measured on validation, confidence-first retrieves the held-out
+  # product markedly more often (hit@5 0.181 vs 0.157) because confidence is
+  # P(B|A) -- the quantity a top-K list should maximise -- while lift already
+  # acts as a hard admission filter above (min_lift). Set this back to
+  # [lift, confidence, support] for the PRD's literal ordering.
+  rank_by: [confidence, lift, support]
+  fallback: popularity                   # popularity | none
+  fallback_size: 5
+
+simulation:
+  scenarios:
+    conservative: 0.02
+    base: 0.05
+    optimistic: 0.10
+
+evaluation:
+  k: 5
+  random_seed: 42
+  max_eval_baskets: 20000   # cap for runtime; sampled deterministically
+
+cohorts:
+  enabled: true
+  # A customer is "repeat" from their 2nd invoice in the training window onwards.
+  repeat_min_invoices: 2
+
+api:
+  cors_origins: ["http://localhost:5173", "http://127.0.0.1:5173"]
+  api_key: null             # set a string to require the X-API-Key header
