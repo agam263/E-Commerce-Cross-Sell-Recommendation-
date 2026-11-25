@@ -7,11 +7,12 @@
  */
 import axios from 'axios'
 
-const baseURL = import.meta.env.VITE_API_BASE_URL || '/api'
+const rawBaseURL = import.meta.env.VITE_API_BASE_URL || '/api'
+const baseURL = rawBaseURL.replace(/\/+$/, '') || '/api'
 
 export const api = axios.create({
   baseURL,
-  timeout: 30000,
+  timeout: 60000,
   headers: { 'Content-Type': 'application/json' },
 })
 
@@ -30,7 +31,9 @@ export function describeError(error) {
   if (data?.error) return `${data.error}: ${data.detail ?? ''}`.trim()
   if (error.code === 'ECONNABORTED') return 'The request timed out.'
   if (error.message === 'Network Error') {
-    return 'Cannot reach the API. Is it running on http://127.0.0.1:8000 (make api)?'
+    return baseURL === '/api'
+      ? 'Cannot reach the API. Is it running on http://127.0.0.1:8000 (make api)?'
+      : 'Cannot reach the API server. If it is waking up from sleep, wait a few seconds and retry.'
   }
   return error.message || 'Request failed.'
 }

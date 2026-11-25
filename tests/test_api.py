@@ -377,3 +377,30 @@ def test_rule_categories_agree_with_the_product_endpoint(client):
     code = rule["antecedents"][0]
     product = client.get(f"/products/{code}").json()
     assert rule["antecedent_categories"][0] == product["category"]
+
+
+# -------------------------------------------------------------------- cors --
+def test_cors_env_allows_deployed_frontend_origins(monkeypatch, store, written_raw):
+    monkeypatch.setenv("CROSSSELL_CORS_ORIGINS", "https://custom.example.com/")
+    monkeypatch.setenv("CROSSSELL_CORS_ORIGIN_REGEX", r"^https://.*\.vercel\.app$")
+    with TestClient(create_app(store=store, config=written_raw)) as client:
+        for origin in ("https://custom.example.com", "https://crosssell-ui.vercel.app"):
+            res = client.options(
+                "/health",
+                headers={"Origin": origin, "Access-Control-Request-Method": "GET"},
+            )
+            assert res.status_code == 200
+            assert res.headers.get("access-control-allow-origin") == origin
+            assert res.headers.get("access-control-allow-credentials") == "true"
+
+
+def test_cors_wildcard_disables_credentials(monkeypatch, store, written_raw):
+    monkeypatch.setenv("CROSSSELL_CORS_ORIGINS", "*")
+    with TestClient(create_app(store=store, config=written_raw)) as client:
+        res = client.options(
+            "/health",
+            headers={"Origin": "https://anywhere.example", "Access-Control-Request-Method": "GET"},
+        )
+        assert res.status_code == 200
+        assert res.headers.get("access-control-allow-origin") == "*"
+        assert "access-control-allow-credentials" not in res.headers

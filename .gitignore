@@ -16,9 +16,13 @@ data/interim/*
 data/processed/*
 !data/processed/.gitkeep
 
-# Build artifacts (rule sets are reproducible from `make train` in ~15s)
+# Build artifacts: keep the shipped rule set tracked so Render can serve it
+# directly without downloading/parsing the 23 MB Excel file at deploy time.
 artifacts/*
 !artifacts/.gitkeep
+!artifacts/latest.json
+!artifacts/rs-43465a06-090dfeb4/
+!artifacts/rs-43465a06-090dfeb4/**
 
 # Report figures ARE committed: evaluation_report.md embeds them, so excluding
 # them would render the report with broken images on GitHub.

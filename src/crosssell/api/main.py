@@ -17,7 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from crosssell import __version__
-from crosssell.api.deps import load_app_config, load_store, require_api_key
+from crosssell.api.deps import load_app_config, load_store, require_api_key, resolve_cors_settings
 from crosssell.api.routers import (
     health,
     insights,
@@ -71,12 +71,12 @@ def create_app(store: Any = None, config: Any = None) -> FastAPI:
     )
     app.state.store = store
     app.state.config = config
-    cors = (config or load_app_config()).api.cors_origins
+    cors, cors_regex, allow_credentials = resolve_cors_settings(config or load_app_config())
     app.add_middleware(
         CORSMiddleware,
         allow_origins=cors,
-        allow_origin_regex=r"http://(localhost|127\.0\.0\.1):\d+",
-        allow_credentials=True,
+        allow_origin_regex=cors_regex,
+        allow_credentials=allow_credentials,
         allow_methods=["*"],
         allow_headers=["*"],
     )

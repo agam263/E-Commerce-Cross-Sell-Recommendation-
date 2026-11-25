@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import sys
 from pathlib import Path
 
@@ -249,8 +250,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_info.set_defaults(func=cmd_info)
 
     p_serve = sub.add_parser("serve", help="run the FastAPI application")
-    p_serve.add_argument("--host", default="127.0.0.1")
-    p_serve.add_argument("--port", type=int, default=8000)
+    p_serve.add_argument("--host", default=os.environ.get("HOST", "127.0.0.1"))
+    p_serve.add_argument("--port", type=int, default=int(os.environ.get("PORT", "8000")))
     p_serve.add_argument("--reload", action="store_true")
     p_serve.set_defaults(func=cmd_serve)
 

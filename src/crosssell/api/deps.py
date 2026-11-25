@@ -17,6 +17,30 @@ log = logging.getLogger(__name__)
 CONFIG_ENV = "CROSSSELL_CONFIG"
 VERSION_ENV = "CROSSSELL_RULESET_VERSION"
 API_KEY_ENV = "CROSSSELL_API_KEY"
+CORS_ORIGINS_ENV = "CROSSSELL_CORS_ORIGINS"
+CORS_ORIGIN_REGEX_ENV = "CROSSSELL_CORS_ORIGIN_REGEX"
+DEFAULT_CORS_ORIGIN_REGEX = r"http://(localhost|127\.0\.0\.1):\d+"
+
+
+def resolve_cors_settings(config: Config) -> tuple[list[str], str | None, bool]:
+    """Combine config CORS origins with deployment environment overrides."""
+    origins = list(config.api.cors_origins)
+    raw_origins = os.environ.get(CORS_ORIGINS_ENV, "")
+    if raw_origins.strip():
+        extra = [item.strip().rstrip("/") for item in raw_origins.split(",") if item.strip()]
+        if "*" in extra:
+            return ["*"], None, False
+        for origin in extra:
+            if origin not in origins:
+                origins.append(origin)
+
+    extra_regex = os.environ.get(CORS_ORIGIN_REGEX_ENV, "").strip()
+    if extra_regex:
+        origin_regex: str | None = f"(?:{DEFAULT_CORS_ORIGIN_REGEX})|(?:{extra_regex})"
+    else:
+        origin_regex = DEFAULT_CORS_ORIGIN_REGEX
+
+    return origins, origin_regex, True
 
 
 def load_app_config() -> Config:

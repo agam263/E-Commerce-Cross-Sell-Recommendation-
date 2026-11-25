@@ -1,0 +1,268 @@
+{
+  "ruleset_version": "rs-43465a06-090dfeb4",
+  "built_at": "2026-11-17T20:27:31+00:00",
+  "pipeline_version": "1.0.0",
+  "config_fingerprint": "090dfeb4f075",
+  "dataset": {
+    "name": "Online Retail.xlsx",
+    "bytes": 23715344,
+    "sha256": "43465a06f2ccf7c8b5bd2892bc7defb52f97487934fe93b16ae4c3936424676d",
+    "source": "UCI Machine Learning Repository / Kaggle 'Online Retail' dataset",
+    "rows": 541909
+  },
+  "data_summary": {
+    "cleaning": {
+      "rows_in": 541909,
+      "rows_out": 522537,
+      "retention": 0.9643,
+      "invoices": 19773,
+      "products": 3907,
+      "customers": 4334,
+      "date_min": "2010-12-01 08:26:00",
+      "date_max": "2011-12-09 12:50:00",
+      "stages": [
+        {
+          "stage": "raw input",
+          "rows_remaining": 541909,
+          "rows_removed": 0
+        },
+        {
+          "stage": "drop exact duplicate rows",
+          "rows_remaining": 536641,
+          "rows_removed": 5268
+        },
+        {
+          "stage": "exclude cancellation invoices (C prefix)",
+          "rows_remaining": 527390,
+          "rows_removed": 9251
+        },
+        {
+          "stage": "require invoice/product/date/quantity/price",
+          "rows_remaining": 527390,
+          "rows_removed": 0
+        },
+        {
+          "stage": "keep positive quantities",
+          "rows_remaining": 526054,
+          "rows_removed": 1336
+        },
+        {
+          "stage": "keep positive unit prices",
+          "rows_remaining": 524878,
+          "rows_removed": 1176
+        },
+        {
+          "stage": "drop non-product service codes",
+          "rows_remaining": 522537,
+          "rows_removed": 2341
+        }
+      ]
+    },
+    "validation_checks": {
+      "no missing InvoiceNo": true,
+      "no missing StockCode": true,
+      "no missing InvoiceDate": true,
+      "no exact duplicate rows": true,
+      "LineRevenue == Quantity * UnitPrice": true,
+      "all quantities positive": true,
+      "all unit prices positive": true,
+      "no cancellation invoices": true,
+      "no non-product service codes": true
+    },
+    "baskets": {
+      "invoices": 18273,
+      "products": 3902,
+      "mean_basket_size": 28.22683741038691,
+      "median_basket_size": 17.0,
+      "p95_basket_size": 78.39999999999782,
+      "max_basket_size": 1108,
+      "date_min": "2010-12-01 08:26:00",
+      "date_max": "2011-12-09 12:50:00"
+    },
+    "splits": {
+      "train": {
+        "invoices": 12779,
+        "products": 3229,
+        "mean_basket_size": 26.94545739103216,
+        "median_basket_size": 16.0,
+        "p95_basket_size": 75.0,
+        "max_basket_size": 693,
+        "date_min": "2010-12-01 08:26:00",
+        "date_max": "2011-09-27 10:34:00"
+      },
+      "validation": {
+        "invoices": 2686,
+        "products": 2692,
+        "mean_basket_size": 29.294489947877885,
+        "median_basket_size": 18.0,
+        "p95_basket_size": 84.0,
+        "max_basket_size": 1036,
+        "date_min": "2011-09-27 10:40:00",
+        "date_max": "2011-11-08 14:22:00"
+      },
+      "test": {
+        "invoices": 2695,
+        "products": 2622,
+        "mean_basket_size": 30.555473098330243,
+        "median_basket_size": 15.0,
+        "p95_basket_size": 79.0,
+        "max_basket_size": 698,
+        "date_min": "2011-11-08 14:26:00",
+        "date_max": "2011-12-09 12:50:00"
+      }
+    },
+    "products_in_catalog": 3907,
+    "products_eligible_for_mining": 3229
+  },
+  "mining": {
+    "engine": "builtin",
+    "elapsed_seconds": 4.98,
+    "min_support_count": 39,
+    "frequent_itemsets": 33680,
+    "frequent_itemsets_by_length": {
+      "1": 1980,
+      "2": 31700
+    },
+    "rules": 27078,
+    "items_in_rules": 1256,
+    "cohorts": {
+      "new": {
+        "baskets": 3417,
+        "min_support_count": 11,
+        "frequent_itemsets": 10840,
+        "frequent_itemsets_by_length": {
+          "1": 1709,
+          "2": 9131
+        },
+        "rules": 6663,
+        "items_in_rules": 945
+      },
+      "repeat": {
+        "baskets": 8414,
+        "min_support_count": 26,
+        "frequent_itemsets": 8589,
+        "frequent_itemsets_by_length": {
+          "1": 1545,
+          "2": 7044
+        },
+        "rules": 5617,
+        "items_in_rules": 842
+      }
+    }
+  },
+  "evaluation": {
+    "k": 5,
+    "test_hit_rate_at_k": 0.18552875695732837,
+    "test_basket_coverage": 0.9788497217068646,
+    "popularity_baseline_hit_rate": 0.022634508348794064,
+    "catalog_coverage": 0.388974914834314
+  },
+  "configuration": {
+    "project": {
+      "name": "crosssell",
+      "ruleset_version": "auto"
+    },
+    "paths": {
+      "raw_data": "data/raw/Online Retail.xlsx",
+      "interim_dir": "data/interim",
+      "processed_dir": "data/processed",
+      "artifacts_dir": "artifacts",
+      "reports_dir": "reports"
+    },
+    "preprocessing": {
+      "drop_exact_duplicates": true,
+      "exclude_cancellations": true,
+      "require_positive_quantity": true,
+      "require_positive_unit_price": true,
+      "drop_missing_customer_id": false,
+      "drop_non_product_codes": true,
+      "non_product_stock_codes": [
+        "POST",
+        "DOT",
+        "C2",
+        "M",
+        "m",
+        "S",
+        "B",
+        "D",
+        "CRUK",
+        "PADS",
+        "BANK CHARGES",
+        "AMAZONFEE"
+      ],
+      "non_product_code_patterns": [
+        "^gift_",
+        "^TEST"
+      ],
+      "country": null,
+      "min_basket_size": 2,
+      "min_product_invoices": 5
+    },
+    "split": {
+      "strategy": "temporal",
+      "train_fraction": 0.7,
+      "validation_fraction": 0.15,
+      "test_fraction": 0.15
+    },
+    "mining": {
+      "engine": "builtin",
+      "min_support": 0.003,
+      "max_itemset_size": 2,
+      "min_confidence": 0.15,
+      "min_lift": 2.0,
+      "min_antecedent_count": 25,
+      "max_consequent_size": 1
+    },
+    "recommendation": {
+      "top_k": 5,
+      "rank_by": [
+        "confidence",
+        "lift",
+        "support"
+      ],
+      "fallback": "popularity",
+      "fallback_size": 5
+    },
+    "simulation": {
+      "scenarios": {
+        "conservative": 0.02,
+        "base": 0.05,
+        "optimistic": 0.1
+      }
+    },
+    "evaluation": {
+      "k": 5,
+      "random_seed": 42,
+      "max_eval_baskets": 20000
+    },
+    "cohorts": {
+      "enabled": true,
+      "repeat_min_invoices": 2
+    },
+    "api": {
+      "cors_origins": [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173"
+      ],
+      "api_key": null
+    }
+  },
+  "environment": {
+    "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+    "machine": "arm64",
+    "packages": {
+      "python": "3.14.7",
+      "crosssell": "1.0.0",
+      "pandas": "3.1.1",
+      "numpy": "2.5.4",
+      "scipy": "1.18.1",
+      "mlxtend": "0.25.0",
+      "fastapi": "0.163.1",
+      "pydantic": "2.14.3"
+    }
+  },
+  "reproduce": {
+    "command": "python -m crosssell.cli train --config config/config.yaml",
+    "note": "Same raw file (sha256 above) + same configuration => same ruleset_version and the same rule set."
+  }
+}

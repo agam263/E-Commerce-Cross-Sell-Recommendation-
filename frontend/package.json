@@ -3,6 +3,9 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
   "description": "React dashboard for the cross-sell recommendation engine",
   "scripts": {
     "dev": "vite",

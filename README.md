@@ -248,6 +248,26 @@ architecture, limitations). Light and dark themes.
 
 ---
 
+## Deployment (Render + Vercel)
+
+The repository ships the trained rule set in `artifacts/rs-43465a06-090dfeb4/`
+so the backend starts directly from CSV/JSON (~4s, ~116 MB RAM) without
+downloading or parsing the 23 MB Excel source file on deploy.
+
+1. **Backend on Render** (configured via [`render.yaml`](render.yaml)):
+   - Create a **New Web Service** (or **Blueprint**) from this repo.
+   - Build command: `pip install --upgrade pip && pip install -r requirements.txt && pip install --no-deps -e .`
+   - Start command: `uvicorn crosssell.api.main:app --host 0.0.0.0 --port $PORT`
+   - Health check path: `/health`
+   - CORS env vars: `CROSSSELL_CORS_ORIGIN_REGEX=^https://.*\.vercel\.app$` (pre-configured in `render.yaml`), plus optional `CROSSSELL_CORS_ORIGINS` (comma-separated) for custom domains and `CROSSSELL_API_KEY` if you want `X-API-Key` auth.
+
+2. **Frontend on Vercel** (configured via [`frontend/vercel.json`](frontend/vercel.json)):
+   - Import the repo in Vercel with **Root Directory** set to `frontend`.
+   - Framework preset: **Vite** (`npm run build`, output `dist`).
+   - Set environment variable `VITE_API_BASE_URL` to your Render URL (no trailing slash, e.g. `https://crosssell-api.onrender.com`), and optionally `VITE_API_KEY` if enabled on the backend.
+
+---
+
 ## Design decisions worth knowing
 
 **Pairs beat triples.** `max_itemset_size: 3` was measured against `2` on the

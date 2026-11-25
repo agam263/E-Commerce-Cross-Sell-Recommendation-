@@ -1,0 +1,8 @@
+stage,rows_remaining,rows_removed
+raw input,541909,0
+drop exact duplicate rows,536641,5268
+exclude cancellation invoices (C prefix),527390,9251
+require invoice/product/date/quantity/price,527390,0
+keep positive quantities,526054,1336
+keep positive unit prices,524878,1176
+drop non-product service codes,522537,2341

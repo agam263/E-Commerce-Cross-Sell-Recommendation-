@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: crosssell-api
+    runtime: python
+    plan: free
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt && pip install --no-deps -e .
+    startCommand: uvicorn crosssell.api.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.8"
+      - key: CROSSSELL_CORS_ORIGIN_REGEX
+        value: "^https://.*\\.vercel\\.app$"
+      - key: CROSSSELL_CORS_ORIGINS
+        value: ""
+      - key: CROSSSELL_API_KEY
+        value: ""

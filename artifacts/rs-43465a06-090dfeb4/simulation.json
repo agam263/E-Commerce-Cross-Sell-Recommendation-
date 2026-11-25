@@ -1,0 +1,45 @@
+{
+  "scenarios": [
+    {
+      "name": "conservative",
+      "adoption_rate": 0.02,
+      "eligible_transactions": 2638,
+      "expected_additional_orders": 52.76,
+      "average_order_value": 22.82,
+      "estimated_incremental_revenue": 1203.9832
+    },
+    {
+      "name": "base",
+      "adoption_rate": 0.05,
+      "eligible_transactions": 2638,
+      "expected_additional_orders": 131.9,
+      "average_order_value": 22.82,
+      "estimated_incremental_revenue": 3009.958
+    },
+    {
+      "name": "optimistic",
+      "adoption_rate": 0.1,
+      "eligible_transactions": 2638,
+      "expected_additional_orders": 263.8,
+      "average_order_value": 22.82,
+      "estimated_incremental_revenue": 6019.916
+    }
+  ],
+  "assumptions": {
+    "eligible_transactions": 2638,
+    "average_order_value": 22.82,
+    "currency": "GBP",
+    "adoption_rates": {
+      "conservative": 0.02,
+      "base": 0.05,
+      "optimistic": 0.1
+    },
+    "notes": "Defaults derived from the hold-out window: eligible transactions = 2,695 test invoices x 97.9% basket coverage; average order value = support-weighted mean value of one purchase of a recommended product."
+  },
+  "formula": {
+    "expected_additional_orders": "eligible_transactions * adoption_rate",
+    "estimated_incremental_revenue": "expected_additional_orders * average_order_value"
+  },
+  "disclaimer": "Simulated estimate under user-supplied assumptions. These figures are not measured or guaranteed revenue uplift; validating actual uplift requires a controlled live experiment.",
+  "generated_at": "2026-11-17T20:27:31+00:00"
+}
